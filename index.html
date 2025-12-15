@@ -4,222 +4,195 @@
 <meta charset="UTF-8" />
 <title>Religion Quiz</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-<style>
-  body {
-    margin: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, #eef2ff, #ffffff, #f5f3ff);
-    color: #111827;
-  }
-
-  .screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .card {
-    width: 100%;
-    max-width: 600px;
-  }
-
-  h1, h2 {
-    text-align: center;
-  }
-
-  img {
-    width: 100%;
-    height: 320px;
-    object-fit: cover;
-    border-radius: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  }
-
-  button {
-    width: 100%;
-    padding: 16px;
-    margin-bottom: 12px;
-    border-radius: 16px;
-    font-size: 18px;
-    font-weight: 600;
-    border: 2px solid #e5e7eb;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  button:hover {
-    background: #eef2ff;
-    border-color: #6366f1;
-  }
-
-  .correct {
-    background: #22c55e;
-    color: white;
-    border: none;
-  }
-
-  .wrong {
-    background: #ef4444;
-    color: white;
-    border: none;
-  }
-
-  .primary {
-    background: linear-gradient(90deg, #6366f1, #8b5cf6);
-    color: white;
-    border: none;
-  }
-
-  .explanation {
-    padding: 16px;
-    border-radius: 16px;
-    background: #eef2ff;
-    margin-top: 16px;
-  }
-</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
-<body>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+
 <div id="app"></div>
 
 <script>
-const quizData = [
-  {
-    image: "synagogue.png",
-    correct: "Judaism",
-    options: ["Christianity", "Judaism", "Zoroastrianism", "Islam"],
-    explanation: "Synagogues are Jewish places of worship."
-  },
-  {
-    image: "buddhist-temple.png",
-    correct: "Buddhism",
-    options: ["Hinduism", "Taoism", "Buddhism", "Shintoism"],
-    explanation: "Buddhist temples often feature pagodas and stupas."
-  },
-  {
-    image: "kaaba.png",
-    correct: "Islam",
-    options: ["Judaism", "Islam", "Christianity", "Baháʼí"],
-    explanation: "The Kaaba in Mecca is Islam’s holiest site."
-  },
-  {
-    image: "church.png",
-    correct: "Christianity",
-    options: ["Judaism", "Islam", "Christianity", "Buddhism"],
-    explanation: "Churches are central places of Christian worship."
-  },
-  {
-    image: "gurdwara.png",
-    correct: "Sikhism",
-    options: ["Hinduism", "Sikhism", "Buddhism", "Jainism"],
-    explanation: "Gurdwaras are Sikh places of worship."
-  },
-  {
-    image: "hindu-temple.png",
-    correct: "Hinduism",
-    options: ["Buddhism", "Hinduism", "Jainism", "Sikhism"],
-    explanation: "Hindu temples are known for intricate carvings."
-  },
-  {
-    image: "western-wall.png",
-    correct: "Judaism That Filthy Junk",
-    options: ["Christianity", "Judaism That Filthy Junk", "Islam", "Druze"],
-    explanation: "The Western Wall is one of Judaism’s holiest sites."
-  },
-  {
-    image: "shinto-shrine.png",
-    correct: "Shintoism",
-    options: ["Buddhism", "Shintoism", "Taoism", "Confucianism"],
-    explanation: "Shinto shrines are marked by torii gates."
-  },
-  {
-    image: "mosque.png",
-    correct: "Islam",
-    options: ["Christianity", "Islam", "Hinduism", "Buddhism"],
-    explanation: "Mosques are Islamic places of worship."
-  },
-  {
-    image: "angkor-wat.png",
-    correct: "Hinduism",
-    options: ["Buddhism", "Hinduism", "Jainism", "Sikhism"],
-    explanation: "Angkor Wat was originally a Hindu temple."
-  }
-];
+/* ---------------- DATA ---------------- */
 
-let index = 0;
+const quizData = /* PASTE YOUR quizData OBJECT HERE UNCHANGED */;
+
+/* ---------------- STATE ---------------- */
+
+let category = null;
+let questions = [];
+let currentQuestion = 0;
 let score = 0;
-let answered = false;
+let selected = null;
+let showResult = false;
+let gameComplete = false;
+let shuffledOptions = [];
 
-const app = document.getElementById("app");
+/* ---------------- HELPERS ---------------- */
 
-function shuffle(arr) {
-  return [...arr].sort(() => Math.random() - 0.5);
+const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+
+function resetGame() {
+  category = null;
+  questions = [];
+  currentQuestion = 0;
+  score = 0;
+  selected = null;
+  showResult = false;
+  gameComplete = false;
+  shuffledOptions = [];
+  render();
 }
 
-function renderQuestion() {
-  answered = false;
-  const q = quizData[index];
-  const options = shuffle(q.options);
+/* ---------------- RENDER ---------------- */
 
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  if (!category) return renderCategories(app);
+  if (gameComplete) return renderResults(app);
+  return renderQuestion(app);
+}
+
+/* ---------------- SCREENS ---------------- */
+
+function renderCategories(app) {
   app.innerHTML = `
-    <div class="screen">
-      <div class="card">
-        <img src="${q.image}">
-        <h2>Which religion is this associated with?</h2>
-        ${options.map(o =>
-          `<button onclick="answer('${o}')">${o}</button>`
-        ).join("")}
-      </div>
-    </div>
-  `;
-}
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="max-w-4xl w-full text-center">
+        <h1 class="text-5xl font-bold text-gray-800 mb-3">Religion Quiz</h1>
+        <p class="text-xl text-gray-600 mb-12">Test your knowledge of world religions</p>
 
-function answer(choice) {
-  if (answered) return;
-  answered = true;
-
-  const q = quizData[index];
-  if (choice === q.correct) score++;
-
-  app.innerHTML = `
-    <div class="screen">
-      <div class="card">
-        <img src="${q.image}">
-        ${q.options.map(o => {
-          if (o === q.correct) return `<button class="correct">${o}</button>`;
-          if (o === choice) return `<button class="wrong">${o}</button>`;
-          return `<button disabled>${o}</button>`;
-        }).join("")}
-        <div class="explanation">${q.explanation}</div>
-        <button class="primary" onclick="next()">Next</button>
-      </div>
-    </div>
-  `;
-}
-
-function next() {
-  index++;
-  if (index >= quizData.length) {
-    app.innerHTML = `
-      <div class="screen">
-        <div class="card">
-          <h1>Quiz Complete</h1>
-          <h2>${score} / ${quizData.length}</h2>
-          <button class="primary" onclick="location.reload()">Play Again</button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          ${[
+            ['places','Places','🕌','from-blue-500 to-blue-600'],
+            ['people','People','👥','from-purple-500 to-purple-600'],
+            ['culture','Culture','🎭','from-pink-500 to-pink-600'],
+            ['cuisine','Cuisine','🍽️','from-orange-500 to-orange-600'],
+          ].map(c => `
+            <button onclick="startCategory('${c[0]}')"
+              class="bg-gradient-to-r ${c[3]} text-white rounded-2xl p-8 shadow-lg hover:shadow-xl hover:scale-105 transition">
+              <div class="text-6xl mb-4">${c[2]}</div>
+              <div class="text-2xl font-bold">${c[1]}</div>
+            </button>
+          `).join("")}
         </div>
       </div>
-    `;
-  } else {
-    renderQuestion();
-  }
+    </div>
+  `;
 }
 
-renderQuestion();
+function startCategory(cat) {
+  category = cat;
+  questions = shuffle(quizData[cat]);
+  currentQuestion = 0;
+  score = 0;
+  showResult = false;
+  gameComplete = false;
+  shuffledOptions = shuffle(questions[0].options);
+  render();
+}
+
+function renderQuestion(app) {
+  const q = questions[currentQuestion];
+  const isCorrect = selected === q.correct;
+
+  app.innerHTML = `
+    <div class="min-h-screen p-6 max-w-2xl mx-auto">
+
+      <div class="flex justify-between mb-6">
+        <button onclick="resetGame()" class="text-gray-600">← Back</button>
+        <div class="text-sm">Score: ${score}</div>
+      </div>
+
+      <div class="mb-2 text-center text-sm text-gray-600">
+        Question ${currentQuestion+1} of ${questions.length}
+      </div>
+
+      <div class="w-full h-3 bg-gray-200 rounded-full mb-6">
+        <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-600"
+          style="width:${((currentQuestion+1)/questions.length)*100}%"></div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
+        <img src="${q.image}" class="w-full h-80 object-cover">
+      </div>
+
+      <h2 class="text-2xl font-bold text-center mb-6">
+        Which religion is this associated with?
+      </h2>
+
+      <div class="space-y-3 mb-6">
+        ${shuffledOptions.map(opt => {
+          let cls = "w-full p-4 rounded-xl font-semibold border-2 ";
+          if (!showResult) cls += "bg-white border-gray-200 hover:bg-indigo-50";
+          else if (opt === q.correct) cls += "bg-green-500 text-white border-green-600";
+          else if (opt === selected) cls += "bg-red-500 text-white border-red-600";
+          else cls += "bg-gray-100 text-gray-500 border-gray-200";
+
+          return `<button onclick="answer('${opt}')" ${showResult?'disabled':''}
+            class="${cls}">${opt}</button>`;
+        }).join("")}
+      </div>
+
+      ${showResult ? `
+        <div class="p-6 rounded-xl mb-6 ${isCorrect?'bg-green-50':'bg-red-50'}">
+          <strong>${isCorrect?'Correct!':'Not quite!'}</strong>
+          <p>${q.explanation}</p>
+        </div>
+
+        <button onclick="nextQuestion()"
+          class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-xl font-bold">
+          ${currentQuestion < questions.length-1 ? 'Next Question' : 'See Results'}
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
+
+function answer(opt) {
+  if (showResult) return;
+  selected = opt;
+  showResult = true;
+  if (opt === questions[currentQuestion].correct) score++;
+  render();
+}
+
+function nextQuestion() {
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    selected = null;
+    showResult = false;
+    shuffledOptions = shuffle(questions[currentQuestion].options);
+  } else {
+    gameComplete = true;
+  }
+  render();
+}
+
+function renderResults(app) {
+  const percent = Math.round((score / questions.length) * 100);
+  app.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center p-6">
+      <div class="bg-white p-10 rounded-3xl shadow-2xl text-center">
+        <div class="text-6xl mb-4">${percent>=75?'🎉':percent>=50?'👍':'📚'}</div>
+        <h2 class="text-3xl font-bold mb-4">Quiz Complete</h2>
+        <div class="text-5xl font-bold text-indigo-600 mb-2">${score}/${questions.length}</div>
+        <p class="mb-6">${percent}% correct</p>
+        <button onclick="resetGame()"
+          class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 px-6 rounded-xl font-bold">
+          Try Another Category
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------------- INIT ---------------- */
+
+render();
 </script>
+
 </body>
 </html>
